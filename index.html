@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#25D366" />
+  <title>Leads WhatsApp</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #128C7E 0%, #075E54 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .app-header {
+      background: #075E54;
+      color: #fff;
+      padding: 15px 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .app-header h1 { font-size: 20px; font-weight: 600; }
+    .app-header p { font-size: 12px; opacity: 0.9; margin-top: 3px; }
+
+    .container { max-width: 650px; margin: 0 auto; padding: 20px; }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #075E54;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .photo-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .photo-btn {
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      user-select: none;
+      color: #fff;
+      text-align: center;
+      min-height: 92px;
+    }
+    .photo-btn input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .photo-btn.camera { background: #25D366; }
+    .photo-btn.gallery { background: #128C7E; }
+    .photo-btn:active { transform: scale(0.98); }
+
+    .btn-icon { font-size: 26px; line-height: 1; }
+    .btn-text { font-size: 13px; opacity: 0.95; }
+
+    .divider {
+      text-align: center;
+      margin: 14px 0 18px;
+      color: #999;
+      font-size: 12px;
+      position: relative;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 42%;
+      height: 1px;
+      background: #e7e7e7;
+    }
+    .divider::before { left: 0; }
+    .divider::after { right: 0; }
+
+    textarea {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      min-height: 150px;
+      resize: vertical;
+    }
+    textarea:focus { outline: none; border-color: #25D366; }
+
+    .hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #f0f9f6;
+      border-radius: 10px;
+    }
+
+    .process-btn {
+      width: 100%;
+      padding: 14px;
+      background: #25D366;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: transform 0.15s;
+    }
+    .process-btn:active { transform: scale(0.99); }
+    .process-btn:disabled { background: #bdbdbd; cursor: not-allowed; }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 18px;
+      background: #fff;
+      border-radius: 16px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+    }
+    .loading.active { display: block; }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #25D366;
+      border-radius: 50%;
+      width: 46px;
+      height: 46px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+
+    .loading-text { color:#666; font-size: 14px; }
+    .progress-bar { width: 100%; height: 8px; background:#f0f0f0; border-radius: 999px; overflow:hidden; margin-top: 12px; }
+    .progress-fill { height:100%; width:0%; background:#25D366; transition: width 0.2s; }
+
+    .results {
+      display: none;
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+    }
+    .results.active { display: block; }
+
+    .results-header {
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .results-title { font-size: 18px; font-weight: 800; color:#075E54; }
+    .results-count {
+      background:#25D366; color:#fff;
+      padding: 6px 12px; border-radius: 999px;
+      font-weight: 800; font-size: 13px;
+    }
+
+    .contact-list { display:flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow:auto; }
+    .contact-item { display:flex; justify-content: space-between; align-items:center; gap: 10px; padding: 14px; background:#f8f9fa; border-radius: 12px; }
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-weight: 800; color:#333; font-size: 15px; overflow:hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .contact-phone { color:#666; font-size: 13px; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+
+    .whatsapp-btn {
+      background:#25D366; color:#fff; text-decoration:none;
+      padding: 10px 14px; border-radius: 10px;
+      font-weight: 800; font-size: 13px; white-space: nowrap;
+      display: inline-flex; align-items:center; gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .export-options { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 2px solid #f0f0f0; }
+    .export-btn { padding: 12px; border-radius: 12px; border: 2px solid #25D366; background:#fff; color:#25D366; font-weight: 800; cursor:pointer; }
+    .export-btn:active { background:#25D366; color:#fff; }
+
+    .toast {
+      position: fixed; bottom: 18px; left: 50%;
+      transform: translateX(-50%);
+      background: #333; color:#fff;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 14px;
+      z-index: 9999;
+      display: none;
+      max-width: 92%;
+      text-align: center;
+    }
+    .toast.show { display:block; animation: slideUp 0.25s ease; }
+    @keyframes slideUp { from{transform:translate(-50%, 20px); opacity:0} to{transform:translate(-50%, 0); opacity:1} }
+
+    .install {
+      display:none;
+      margin-top: 12px;
+      background: #0b6b5f;
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .install button{
+      margin-top: 10px;
+      width: 100%;
+      background: #25D366;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 900;
+      font-size: 15px;
+      cursor: pointer;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-header">
+    <h1>📱 Leads WhatsApp</h1>
+    <p>Cole contatos e converta em links clicáveis (OCR + WhatsApp)</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="section-title">📸 Extrair de Foto</div>
+
+      <div class="photo-buttons">
+        <label class="photo-btn camera" aria-label="Tirar foto">
+          <input type="file" accept="image/*" capture="environment" id="cameraInput" />
+          <div class="btn-icon">📷</div>
+          <div class="btn-text">Tirar Foto</div>
+        </label>
+
+        <label class="photo-btn gallery" aria-label="Escolher da galeria">
+          <input type="file" accept="image/*" id="galleryInput" />
+          <div class="btn-icon">🖼️</div>
+          <div class="btn-text">Da Galeria</div>
+        </label>
+      </div>
+
+      <div class="divider">OU</div>
+
+      <div class="section-title">✍️ Cole ou digite aqui</div>
+      <textarea id="manualInput" placeholder="Cole sua lista aqui...
+
+João Silva 83988619786
+Maria Santos 21992561041
+Pedro Costa (83) 98646-4235"></textarea>
+
+      <div class="hint">💡 Dica: quanto melhor a foto (fundo claro, boa luz), melhor o OCR.</div>
+
+      <button class="process-btn" id="processBtn">🚀 Processar Leads</button>
+
+      <div class="install" id="installBox">
+        <div><strong>📲 Instalar como App</strong><br>Toque no botão abaixo para instalar (Android/Chrome). No iPhone use “Compartilhar → Adicionar à Tela de Início”.</div>
+        <button id="installBtn">Instalar App</button>
+      </div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loadingText">Processando...</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="results-header">
+        <div class="results-title">✅ Leads Prontos</div>
+        <div class="results-count" id="resultsCount">0</div>
+      </div>
+
+      <div class="contact-list" id="contactList"></div>
+
+      <div class="export-options">
+        <button class="export-btn" id="exportVcf">📥 Baixar VCF</button>
+        <button class="export-btn" id="exportHtml">🌐 Página HTML</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
+  <script>
+    // =========================
+    // PWA Service Worker
+    // =========================
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    // =========================
+    // PWA Install prompt (Android/Chrome)
+    // =========================
+    let deferredPrompt = null;
+    const installBox = document.getElementById('installBox');
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBox.style.display = 'block';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      try { await deferredPrompt.userChoice; } catch {}
+      deferredPrompt = null;
+      installBox.style.display = 'none';
+    });
+
+    // =========================
+    // Estado
+    // =========================
+    let contacts = [];
+    let worker = null;
+
+    // OCR exige HTTPS ou http://localhost
+    if (location.protocol === 'file:') {
+      alert('⚠️ Para o OCR funcionar, abra este app em um servidor (https://) ou em http://localhost.\n\nDica: publique no GitHub Pages / Netlify, ou rode "python -m http.server".');
+    }
+
+    // =========================
+    // OCR (Tesseract v4) - init
+    // =========================
+    async function initWorker() {
+      if (worker) return worker;
+
+      showLoading(true, 'Preparando OCR...');
+      updateProgress(0);
+
+      worker = await Tesseract.createWorker({
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            const p = Math.round((m.progress || 0) * 100);
+            updateProgress(p);
+            updateLoadingText(`Lendo imagem... ${p}%`);
+          } else if (m.status) {
+            updateLoadingText('Preparando OCR...');
+          }
+        },
+        workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/worker.min.js',
+        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@4.0.4/tesseract-core.wasm.js',
+        langPath: 'https://tessdata.projectnaptha.com/4.0.0_best'
+      });
+
+      await worker.load();
+      await worker.loadLanguage('por');
+      await worker.initialize('por');
+
+      return worker;
+    }
+
+    async function processImage(file) {
+      showLoading(true, 'Lendo texto da imagem...');
+      updateProgress(0);
+
+      try {
+        const w = await initWorker();
+        const { data } = await w.recognize(file);
+        const text = (data && data.text) ? data.text : '';
+
+        if (text.trim()) {
+          document.getElementById('manualInput').value = text;
+          processText(text);
+        } else {
+          showToast('⚠️ Nenhum texto encontrado (tente uma foto mais nítida).');
+          showLoading(false);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Erro no OCR. Verifique HTTPS e tente novamente.');
+        showLoading(false);
+      }
+    }
+
+    // =========================
+    // Inputs
+    // =========================
+    const cameraInput = document.getElementById('cameraInput');
+    const galleryInput = document.getElementById('galleryInput');
+    const manualInput = document.getElementById('manualInput');
+    const processBtn = document.getElementById('processBtn');
+
+    cameraInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (file) await processImage(file);
+    });
+
+    galleryInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (file) await processImage(file);
+    });
+
+    processBtn.addEventListener('click', () => {
+      const text = manualInput.value || '';
+      if (text.trim()) processText(text);
+      else showToast('⚠️ Cole ou digite os contatos primeiro');
+    });
+
+    // =========================
+    // Parser de contatos
+    // =========================
+    function processText(text) {
+      showLoading(true, 'Processando contatos...');
+      contacts = [];
+
+      const lines = text.split('\n');
+
+      lines.forEach((line) => {
+        line = (line || '').trim();
+        if (!line || line.length < 5) return;
+
+        const numbersOnly = line.replace(/\D/g, '');
+        let phone = null;
+
+        if (numbersOnly.length >= 10) {
+          let clean = numbersOnly;
+          if (clean.startsWith('55')) clean = clean.substring(2);
+
+          if (clean.length >= 10) {
+            const last = clean.slice(-11);
+            const ddd = last.substring(0, 2);
+
+            const dddNum = parseInt(ddd, 10);
+            if (dddNum >= 11 && dddNum <= 99) {
+              if (last.length === 11) {
+                phone = '55' + last;
+              } else if (last.length === 10) {
+                phone = '55' + ddd + '9' + last.substring(2);
+              }
+            }
+          }
+        }
+
+        if (phone) {
+          let name = line.replace(/[\d\s\+\-\(\)]+/g, ' ').trim();
+          name = name.replace(/\s+/g, ' ');
+          if (!name || name.length < 2) name = `Lead ${phone.slice(-4)}`;
+          if (name.length > 50) name = name.substring(0, 50);
+          contacts.push({ name, phone });
+        }
+      });
+
+      contacts = contacts.filter((c, i, self) => i === self.findIndex(t => t.phone === c.phone));
+
+      if (contacts.length > 0) {
+        displayResults();
+        showToast(`✅ ${contacts.length} lead${contacts.length>1?'s':''} encontrado${contacts.length>1?'s':''}!`);
+      } else {
+        showToast('⚠️ Nenhum número válido encontrado');
+      }
+
+      showLoading(false);
+    }
+
+    function displayResults() {
+      const contactList = document.getElementById('contactList');
+      const resultsCount = document.getElementById('resultsCount');
+      const results = document.getElementById('results');
+
+      contactList.innerHTML = '';
+      resultsCount.textContent = contacts.length;
+
+      contacts.forEach((c) => {
+        const item = document.createElement('div');
+        item.className = 'contact-item';
+        item.innerHTML = `
+          <div class="contact-info">
+            <div class="contact-name">${escapeHtml(c.name)}</div>
+            <div class="contact-phone">${formatPhone(c.phone)}</div>
+          </div>
+          <a class="whatsapp-btn" href="https://wa.me/${c.phone}" target="_blank" rel="noopener">💬 Abrir</a>
+        `;
+        contactList.appendChild(item);
+      });
+
+      results.classList.add('active');
+      setTimeout(() => results.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+
+    function formatPhone(phone) {
+      if (phone.startsWith('55') && phone.length >= 12) {
+        const ddd = phone.substring(2, 4);
+        const part1 = phone.substring(4, 9);
+        const part2 = phone.substring(9);
+        return `+55 ${ddd} ${part1}-${part2}`;
+      }
+      return phone;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Export VCF
+    document.getElementById('exportVcf').addEventListener('click', () => {
+      if (!contacts.length) return showToast('⚠️ Nenhum lead para exportar');
+      let vcf = '';
+      contacts.forEach((c) => {
+        vcf += `BEGIN:VCARD\nVERSION:3.0\nFN:${c.name}\nTEL;TYPE=CELL:+${c.phone}\nEND:VCARD\n`;
+      });
+      const blob = new Blob([vcf], { type: 'text/vcard' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leads_${Date.now()}.vcf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('✅ VCF baixado!');
+    });
+
+    // Export HTML
+    document.getElementById('exportHtml').addEventListener('click', () => {
+      if (!contacts.length) return showToast('⚠️ Nenhum lead para exportar');
+      const html = generateHTML();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leads_${Date.now()}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('✅ Página gerada!');
+    });
+
+    function generateHTML() {
+      let contactsHTML = '';
+      contacts.forEach((c) => {
+        const initial = (c.name || 'L').charAt(0).toUpperCase();
+        contactsHTML += `
+          <a href="https://wa.me/${c.phone}" class="contact-btn" target="_blank" rel="noopener">
+            <div class="contact-info">
+              <div class="contact-avatar">${escapeHtml(initial)}</div>
+              <div class="contact-details">
+                <div class="contact-name">${escapeHtml(c.name)}</div>
+                <div class="contact-phone">${formatPhone(c.phone)}</div>
+              </div>
+            </div>
+            <div class="go">Abrir</div>
+          </a>
+        `;
+      });
+
+      return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meus Leads WhatsApp</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#128C7E 0%,#075E54 100%);min-height:100vh;padding:20px}
+.container{max-width:900px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.2)}
+h1{color:#075E54;text-align:center;margin-bottom:18px}
+.contacts-grid{display:grid;gap:12px}
+.contact-btn{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:#fff;border:2px solid #e0e0e0;border-radius:14px;text-decoration:none;color:#333}
+.contact-btn:hover{background:#f0f9f6;border-color:#25D366}
+.contact-info{display:flex;align-items:center;gap:14px}
+.contact-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+.contact-name{font-weight:800}
+.contact-phone{font-size:13px;color:#666;margin-top:4px;font-family:ui-monospace,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+.go{background:#25D366;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📱 Meus Leads WhatsApp</h1>
+  <div class="contacts-grid">${contactsHTML}</div>
+</div>
+</body>
+</html>`;
+    }
+
+    function showLoading(show, text = 'Processando...') {
+      document.getElementById('loading').classList.toggle('active', show);
+      if (show) { updateLoadingText(text); updateProgress(0); }
+    }
+    function updateLoadingText(text) {
+      document.getElementById('loadingText').textContent = text;
+    }
+    function updateProgress(percent) {
+      document.getElementById('progressFill').style.width = percent + '%';
+    }
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>
